@@ -164,17 +164,28 @@ if (isset($_GET['action'])) {
 
         $log_entry = "--- Quiz End | Student: " . $student_number . " | Session ID: " . $session_id_log . " | Client UUID: " . $client_uuid . " | IP: " . $user_ip_log . " | User Agent: " . $user_agent_log . " | Reason: " . $termination_reason . " | Time: " . date('Y-m-d H:i:s') . " ---\n";
 
-        $correct_answers_count = 0; // Initialize score for CSV
+        $correct_answers_count = 0; // Initialize final score
+        $num_questions = count($all_questions_with_answers);
+        $question_scores = array_fill(0, $num_questions, 0); // Initialize individual question scores with 0s
+
+        // Create a map from question ID to its index for efficient lookup
+        $question_id_to_index_map = [];
+        foreach ($all_questions_with_answers as $idx => $q) {
+            $question_id_to_index_map[$q['id']] = $idx;
+        }
 
         foreach ($answers_to_log as $answer) {
             $actual_is_correct = false;
-            foreach ($all_questions_with_answers as $q) {
-                if (isset($answer['questionId']) && $q['id'] == $answer['questionId']) {
-                    if (isset($answer['selectedAnswer']) && $answer['selectedAnswer'] !== 'Time Expired / No Answer' && $answer['selectedAnswer'] === $q['correct_answer']) {
-                        $actual_is_correct = true;
-                        $correct_answers_count++; // Increment score if correct
-                    }
-                    break;
+            $question_id = $answer['questionId'] ?? null;
+
+            if ($question_id !== null && isset($question_id_to_index_map[$question_id])) {
+                $q_index = $question_id_to_index_map[$question_id];
+                $q = $all_questions_with_answers[$q_index]; // Get the full question data
+
+                if (isset($answer['selectedAnswer']) && $answer['selectedAnswer'] !== 'Time Expired / No Answer' && $answer['selectedAnswer'] === $q['correct_answer']) {
+                    $actual_is_correct = true;
+                    $correct_answers_count++; // Increment final score
+                    $question_scores[$q_index] = 1; // Mark this question as correct (assuming 1 point per question)
                 }
             }
             $answer['serverValidatedCorrect'] = $actual_is_correct;
@@ -189,11 +200,23 @@ if (isset($_GET['action'])) {
 
         // --- New: Log score to quiz_scores.csv ---
         $student_number_for_csv = str_replace(',', '', $student_number); // Remove commas to prevent CSV issues
-        $score_data_row = $student_number_for_csv . ',' . $correct_answers_count . "\n";
+
+        // Prepare individual scores for CSV by joining the array elements
+        $individual_scores_csv = implode(',', $question_scores);
+
+        // Construct the full data row for the CSV
+        $score_data_row = $student_number_for_csv . ',' . $individual_scores_csv . ',' . $correct_answers_count . "\n";
 
         // Check if CSV file exists and create headers if not
         if (!file_exists($quiz_scores_csv_file)) {
-            $header_row = "Student,QuizScore\n";
+            // Generate dynamic headers based on the number of questions
+            $header_cols = ["Student"];
+            for ($i = 1; $i <= $num_questions; $i++) {
+                $header_cols[] = "Q{$i}_Score";
+            }
+            $header_cols[] = "Final_Score";
+            $header_row = implode(',', $header_cols) . "\n";
+
             if (file_put_contents($quiz_scores_csv_file, $header_row) === false) {
                 error_log("Failed to create quiz_scores.csv with headers. Check file permissions.");
             }
