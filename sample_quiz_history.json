@@ -1,0 +1,74 @@
+[
+    {
+        "id": 1,
+        "question": "In which year did World War II end?",
+        "options": ["1943", "1944", "1945", "1946"],
+        "correct_answer": "1945"
+    },
+    {
+        "id": 2,
+        "question": "Who was the first President of the United States?",
+        "options": ["Thomas Jefferson", "John Adams", "George Washington", "Benjamin Franklin"],
+        "correct_answer": "George Washington"
+    },
+    {
+        "id": 3,
+        "question": "Which ancient wonder was located in Alexandria, Egypt?",
+        "options": ["Colossus of Rhodes", "Lighthouse of Alexandria", "Hanging Gardens", "Temple of Artemis"],
+        "correct_answer": "Lighthouse of Alexandria"
+    },
+    {
+        "id": 4,
+        "question": "What year did Christopher Columbus first reach the Americas?",
+        "options": ["1490", "1491", "1492", "1493"],
+        "correct_answer": "1492"
+    },
+    {
+        "id": 5,
+        "question": "Which empire was ruled by the Aztecs?",
+        "options": ["Mexican Empire", "Incan Empire", "Mayan Empire", "Aztec Empire"],
+        "correct_answer": "Aztec Empire"
+    },
+    {
+        "id": 6,
+        "question": "Who was the first Emperor of Rome?",
+        "options": ["Julius Caesar", "Augustus", "Nero", "Caligula"],
+        "correct_answer": "Augustus"
+    },
+    {
+        "id": 7,
+        "question": "In which year did the Berlin Wall fall?",
+        "options": ["1987", "1988", "1989", "1990"],
+        "correct_answer": "1989"
+    },
+    {
+        "id": 8,
+        "question": "Which country was ruled by Queen Victoria for 63 years?",
+        "options": ["France", "Germany", "United Kingdom", "Spain"],
+        "correct_answer": "United Kingdom"
+    },
+    {
+        "id": 9,
+        "question": "What was the name of the ship that sank in 1912?",
+        "options": ["Lusitania", "Titanic", "Britannic", "Olympic"],
+        "correct_answer": "Titanic"
+    },
+    {
+        "id": 10,
+        "question": "Which ancient civilization built the Great Wall of China?",
+        "options": ["Mongol Empire", "Qin Dynasty", "Han Dynasty", "Ming Dynasty"],
+        "correct_answer": "Qin Dynasty"
+    },
+    {
+        "id": 11,
+        "question": "What year did the French Revolution begin?",
+        "options": ["1787", "1788", "1789", "1790"],
+        "correct_answer": "1789"
+    },
+    {
+        "id": 12,
+        "question": "Who was the first woman to win a Nobel Prize?",
+        "options": ["Marie Curie", "Mother Teresa", "Jane Addams", "Pearl Buck"],
+        "correct_answer": "Marie Curie"
+    }
+] 

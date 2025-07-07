@@ -2,15 +2,17 @@ $(document).ready(function() {
     let currentQuestionIndex = 0;
     let studentNumber = '';
     let quizActive = false;
-    let awayTimer = null; // Renamed from visibilityChangeTimer
+    let awayTimer = null;
     let questionTimer = null;
-    const MAX_AWAY_TIME = 2000; // 2 seconds (same as before, now for any away state)
+    const MAX_AWAY_TIME = 2000; // 2 seconds
     const MAX_QUESTION_TIME = 20000; // 20 seconds
     let answers = [];
     let clientUuid = getOrCreateClientUuid();
+    let totalQuestions = 0;
 
     console.log("Script loaded. Initial Quiz State from PHP:", initialQuizState);
     console.log("Client UUID:", clientUuid);
+    console.log("Quiz ID:", typeof quizId !== 'undefined' ? quizId : 'Not set');
 
     // --- Initial Page Load State Check from PHP ---
     if (initialQuizState === 'terminated') {
@@ -45,8 +47,21 @@ $(document).ready(function() {
         studentNumber = $('#student-number').val().trim();
         if (studentNumber) {
             $('#student-number-error').text('');
+            
+            // Show loading state
+            const btn = $(this);
+            const originalText = btn.html();
+            btn.html('<span class="loading"></span> Starting Quiz...');
+            btn.prop('disabled', true);
+            
+            // Determine the correct URL based on whether we're in a dynamic quiz or the original
+            let startUrl = 'index.php?action=start_quiz_session';
+            if (typeof quizId !== 'undefined' && quizId) {
+                startUrl = 'quiz.php?action=start_quiz_session&id=' + quizId;
+            }
+            
             $.ajax({
-                url: 'index.php?action=start_quiz_session',
+                url: startUrl,
                 type: 'POST',
                 contentType: 'application/x-www-form-urlencoded',
                 data: { studentNumber: studentNumber, clientUuid: clientUuid },
@@ -65,11 +80,31 @@ $(document).ready(function() {
                     } else {
                         $('#student-number-error').text('Failed to start quiz session: ' + response.message);
                         console.error("Failed to start quiz session:", response.message);
+                        btn.html(originalText);
+                        btn.prop('disabled', false);
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Error starting quiz session:', status, error);
-                    $('#student-number-error').text('Network error or server issue.');
+                    
+                    // Handle specific error cases
+                    if (xhr.status === 403) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.code === 'ALREADY_ATTEMPTED') {
+                                $('#student-number-error').html('<i class="fas fa-exclamation-triangle"></i> ' + response.message + '<br><small>If you believe this is an error, please contact your instructor.</small>');
+                            } else {
+                                $('#student-number-error').text('Access denied: ' + (response.message || 'You are not authorized to take this quiz.'));
+                            }
+                        } catch (e) {
+                            $('#student-number-error').text('Access denied: You are not authorized to take this quiz.');
+                        }
+                    } else {
+                        $('#student-number-error').text('Network error or server issue. Please try again.');
+                    }
+                    
+                    btn.html(originalText);
+                    btn.prop('disabled', false);
                 }
             });
         } else {
@@ -77,15 +112,21 @@ $(document).ready(function() {
         }
     });
 
-    // --- Load Question (AJAX call to index.php) ---
+    // --- Load Question (AJAX call) ---
     function loadQuestion(index) {
         if (!quizActive) {
             console.log("loadQuestion called but quiz is not active. Exiting.");
             return;
         }
 
+        // Determine the correct URL based on whether we're in a dynamic quiz or the original
+        let questionUrl = 'index.php?action=get_question&question_index=' + index;
+        if (typeof quizId !== 'undefined' && quizId) {
+            questionUrl = 'quiz.php?action=get_question&question_index=' + index + '&id=' + quizId;
+        }
+
         $.ajax({
-            url: 'index.php?action=get_question&question_index=' + index,
+            url: questionUrl,
             type: 'GET',
             dataType: 'json',
             success: function(response) {
@@ -108,6 +149,12 @@ $(document).ready(function() {
                         $('#options-container').append(optionBtn);
                     });
 
+                    // Update progress bar
+                    updateProgressBar();
+                    
+                    // Update navigation buttons
+                    updateNavigationButtons();
+
                     startQuestionTimer();
                 } else if (response.status === 'end') {
                     endQuiz('Quiz Completed Successfully!', 'Completed');
@@ -124,6 +171,42 @@ $(document).ready(function() {
         });
     }
 
+    // Update progress bar
+    function updateProgressBar() {
+        // Estimate total questions (you might want to get this from the server)
+        if (totalQuestions === 0) {
+            totalQuestions = 10; // Default estimate, adjust as needed
+        }
+        const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+        $('#progress-bar').css('width', progress + '%');
+    }
+
+    // Update navigation buttons
+    function updateNavigationButtons() {
+        $('#prev-btn').prop('disabled', currentQuestionIndex === 0);
+        $('#next-btn').prop('disabled', false);
+    }
+
+    // Navigation button handlers
+    $('#prev-btn').on('click', function() {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            loadQuestion(currentQuestionIndex);
+        }
+    });
+
+    $('#next-btn').on('click', function() {
+        // If no option is selected, show message
+        if ($('.option-btn.selected').length === 0) {
+            $('#quiz-message').text('Please select an answer before proceeding.').show();
+            setTimeout(() => $('#quiz-message').fadeOut(), 3000);
+            return;
+        }
+        
+        currentQuestionIndex++;
+        loadQuestion(currentQuestionIndex);
+    });
+
     // --- Option Selection ---
     function selectOption(selectedButton) {
         if (!quizActive) return;
@@ -137,8 +220,14 @@ $(document).ready(function() {
 
         clearTimeout(questionTimer);
 
+        // Determine the correct URL for answer validation
+        let validateUrl = 'index.php?action=validate_answer';
+        if (typeof quizId !== 'undefined' && quizId) {
+            validateUrl = 'quiz.php?action=validate_answer&id=' + quizId;
+        }
+
         $.ajax({
-            url: 'index.php?action=validate_answer',
+            url: validateUrl,
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
@@ -330,8 +419,14 @@ $(document).ready(function() {
 
     // --- Submit Answers to Server (PHP) ---
     function submitAnswersToServer(data, reason) {
+        // Determine the correct URL for ending the quiz session
+        let endUrl = 'index.php?action=end_quiz_session';
+        if (typeof quizId !== 'undefined' && quizId) {
+            endUrl = 'quiz.php?action=end_quiz_session&id=' + quizId;
+        }
+
         $.ajax({
-            url: 'index.php?action=end_quiz_session',
+            url: endUrl,
             type: 'POST',
             async: false,
             contentType: 'application/json',
