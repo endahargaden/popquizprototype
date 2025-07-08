@@ -1,238 +1,277 @@
-# Quiz Management System
+# Laravel Quiz Management System
 
-A comprehensive quiz management system that allows professors to create, manage, and analyze quizzes with QR code access for students.
+A comprehensive quiz management system built with Laravel, featuring professor registration/login, quiz creation via drag-and-drop JSON upload, unique quiz URLs with QR code generation, student quiz taking, and detailed analytics.
 
 ## Features
 
-### For Professors (Authenticated Users)
-1. **User Registration & Login** - Secure authentication system
-2. **Quiz Creation** - Drag & drop JSON file upload with validation
-3. **Quiz Management Dashboard** - View all created quizzes
-4. **QR Code Generation** - Automatic QR code creation for each quiz
-5. **Quiz Statistics** - Detailed analytics including:
-   - Average overall score
-   - Easiest and hardest questions
-   - Individual question performance
-   - Student attempt history
-6. **Quiz Deletion** - Remove quizzes and associated data
+### For Professors/Administrators
+- **User Authentication**: Secure registration and login system
+- **Quiz Creation**: Drag-and-drop JSON file upload with validation
+- **Quiz Templates**: Pre-built templates for Math, Science, and History quizzes
+- **Unique Quiz URLs**: Each quiz gets a unique identifier and shareable URL
+- **QR Code Generation**: Automatic QR code generation for easy quiz sharing
+- **Dashboard**: Modern dashboard with quiz statistics and management
+- **Search & Pagination**: Find and manage quizzes efficiently
+- **Analytics**: Detailed quiz statistics including:
+  - Total attempts
+  - Average scores
+  - Easiest and hardest questions
+  - Individual question performance
+- **Quiz Management**: Delete quizzes and regenerate QR codes
 
 ### For Students
-1. **QR Code Access** - Scan QR code to access quiz
-2. **Secure Quiz Taking** - Anti-cheating measures:
-   - Window focus/blur detection
-   - Page visibility monitoring
-   - Session management
-   - Time limits per question
-3. **Real-time Feedback** - Immediate answer validation
-4. **Session Protection** - Prevents page refresh/back navigation
+- **Quiz Taking**: Modern, responsive quiz interface
+- **Timer**: 20-second timer per question
+- **Progress Tracking**: Visual progress bar
+- **Navigation**: Previous/Next question navigation
+- **Session Management**: Prevents multiple attempts per student
+- **Responsive Design**: Works on desktop and mobile devices
 
-## System Architecture
+## System Requirements
 
-### Database Tables
-- **users** - Professor accounts and authentication
-- **quizzes** - Quiz metadata and file references
-- **quiz_results** - Student responses and scores
+- PHP 8.1 or higher
+- MySQL 5.7 or higher
+- Composer
+- Web server (Apache/Nginx)
 
-### File Structure
-```
-├── config.php              # Database and system configuration
-├── auth.php                # Authentication system
-├── login.php               # Login/registration page
-├── dashboard.php           # Professor dashboard
-├── create_quiz.php         # Quiz creation interface
-├── quiz_manager.php        # Quiz management backend
-├── quiz.php                # Dynamic quiz page (for students)
-├── index.php               # Original quiz page (legacy)
-├── script.js               # Frontend JavaScript
-├── style.css               # Styling
-├── edgeworth.json          # Sample quiz data
-├── uploads/                # Quiz JSON files
-├── qr_codes/               # Generated QR codes
-└── logs/                   # System logs
-```
+## Installation
 
-## Setup Instructions
-
-### 1. Database Setup
-1. Create a MySQL database named `quiz_system`
-2. Update database credentials in `config.php`:
-   ```php
-   define('DB_HOST', 'localhost');
-   define('DB_NAME', 'quiz_system');
-   define('DB_USER', 'your_username');
-   define('DB_PASS', 'your_password');
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd quiz-system-laravel
    ```
-3. The system will automatically create required tables on first run
 
-### 2. File Permissions
-Ensure the following directories are writable:
-```bash
-chmod 755 uploads/
-chmod 755 qr_codes/
-chmod 755 logs/
-```
+2. **Install dependencies**
+   ```bash
+   composer install
+   ```
 
-### 3. Web Server Configuration
-- PHP 7.4+ required
-- MySQL/MariaDB database
-- Apache/Nginx web server
-- Enable PHP sessions and JSON extensions
+3. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-## Usage Guide
+4. **Configure database**
+   Edit `.env` file and set your database credentials:
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=quiz_system_laravel
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   ```
 
-### For Professors
+5. **Run migrations**
+   ```bash
+   php artisan migrate
+   ```
 
-#### 1. Registration & Login
-- Visit `login.php` to create an account or sign in
-- Use email or username to login
+6. **Create storage links**
+   ```bash
+   php artisan storage:link
+   ```
 
-#### 2. Creating a Quiz
-1. Click "Create New Quiz" from dashboard
-2. Prepare a JSON file with quiz questions (see format below)
-3. Drag & drop or select the JSON file
-4. Preview the quiz structure
-5. Click "Create Quiz" to generate unique URL and QR code
+7. **Set permissions** (Linux/Mac)
+   ```bash
+   chmod -R 775 storage bootstrap/cache
+   ```
 
-#### 3. Managing Quizzes
-- View all quizzes in the dashboard
-- Access quiz statistics and results
-- Download QR codes for student access
-- Delete quizzes when no longer needed
+8. **Start the development server**
+   ```bash
+   php artisan serve
+   ```
 
-### For Students
+## Database Structure
 
-#### 1. Taking a Quiz
-1. Scan the QR code provided by professor
-2. Enter student number
-3. Answer questions within time limits
-4. Complete all questions to finish
+### Users Table
+- `id` - Primary key
+- `username` - Unique username
+- `email` - Unique email address
+- `password_hash` - Hashed password
+- `created_at`, `updated_at` - Timestamps
 
-#### 2. Quiz Rules
-- Stay on the quiz page (no switching tabs/windows)
-- Answer within 20 seconds per question
-- No page refresh or back navigation allowed
+### Quizzes Table
+- `id` - Primary key
+- `quiz_id` - Unique 32-character identifier
+- `user_id` - Foreign key to users table
+- `title` - Quiz title
+- `json_file` - Path to JSON file containing questions
+- `created_at`, `updated_at` - Timestamps
 
-## JSON Quiz Format
+### Quiz Results Table
+- `id` - Primary key
+- `quiz_id` - Foreign key to quizzes table
+- `student_number` - Student identifier
+- `session_id` - PHP session ID
+- `client_uuid` - Browser/client identifier
+- `user_ip` - Student's IP address
+- `user_agent` - Browser user agent
+- `answers` - JSON array of student answers
+- `final_score` - Total correct answers
+- `individual_scores` - JSON array of per-question scores
+- `created_at`, `updated_at` - Timestamps
+
+## Quiz JSON Format
+
+Quizzes are stored as JSON files with the following structure:
 
 ```json
 [
-    {
-        "id": 1,
-        "question": "What is the capital of France?",
-        "options": ["Berlin", "Madrid", "Paris", "Rome"],
-        "correct_answer": "Paris"
-    },
-    {
-        "id": 2,
-        "question": "Which planet is known as the Red Planet?",
-        "options": ["Earth", "Mars", "Jupiter", "Venus"],
-        "correct_answer": "Mars"
-    }
+  {
+    "id": "question_1",
+    "question": "What is 2 + 2?",
+    "options": ["3", "4", "5", "6"],
+    "correct_answer": "4"
+  },
+  {
+    "id": "question_2",
+    "question": "What is the capital of France?",
+    "options": ["London", "Berlin", "Paris", "Madrid"],
+    "correct_answer": "Paris"
+  }
 ]
 ```
-
-### JSON Requirements
-- Array of question objects
-- Each question must have: `id`, `question`, `options`, `correct_answer`
-- `options` must be an array with at least 2 choices
-- `correct_answer` must match one of the options exactly
-
-## Security Features
-
-### Anti-Cheating Measures
-- **Window Focus Detection** - Monitors if student switches away from quiz
-- **Page Visibility API** - Detects tab switching and browser minimization
-- **Session Management** - Prevents multiple simultaneous attempts
-- **Time Limits** - Enforces per-question time constraints
-- **IP Tracking** - Logs student IP addresses for audit trail
-
-### Data Protection
-- Password hashing using PHP's `password_hash()`
-- SQL injection prevention with prepared statements
-- XSS protection with `htmlspecialchars()`
-- CSRF protection through session validation
-
-## Analytics & Reporting
-
-### Quiz Statistics
-- **Overall Performance** - Average scores across all attempts
-- **Question Analysis** - Success rates for individual questions
-- **Difficulty Assessment** - Automatic identification of easiest/hardest questions
-- **Student Tracking** - Individual student performance history
-
-### Data Export
-- Results stored in database for analysis
-- Individual question scores tracked
-- Timestamp and session information logged
-- User agent and IP address tracking
 
 ## API Endpoints
 
 ### Authentication
-- `POST auth.php?action=register` - User registration
-- `POST auth.php?action=login` - User login
-- `POST auth.php?action=logout` - User logout
+- `GET /login` - Login page
+- `POST /login` - Login form submission
+- `GET /register` - Registration page
+- `POST /register` - Registration form submission
+- `POST /logout` - Logout
 
-### Quiz Management
-- `POST quiz_manager.php?action=create_quiz` - Create new quiz
-- `POST quiz_manager.php?action=get_quiz_stats` - Get quiz statistics
-- `POST quiz_manager.php?action=delete_quiz` - Delete quiz
+### Dashboard
+- `GET /dashboard` - Professor dashboard
+- `GET /create-quiz` - Quiz creation page
+- `POST /create-quiz` - Create new quiz
+- `POST /quiz/stats` - Get quiz statistics
+- `DELETE /quiz/delete` - Delete quiz
+- `POST /quiz/regenerate-qr` - Regenerate QR code
 
-### Quiz Taking
-- `POST quiz.php?action=start_quiz_session` - Start quiz session
-- `GET quiz.php?action=get_question` - Get question by index
-- `POST quiz.php?action=validate_answer` - Validate student answer
-- `POST quiz.php?action=end_quiz_session` - End quiz and save results
+### Student Quiz Taking
+- `GET /quiz/{quizId}` - Quiz taking page
+- `POST /quiz/{quizId}/start` - Start quiz session
+- `GET /quiz/{quizId}/question` - Get question
+- `POST /quiz/{quizId}/validate` - Validate answer
+- `POST /quiz/{quizId}/end` - End quiz session
+
+## Security Features
+
+- **CSRF Protection**: All forms protected against CSRF attacks
+- **Input Validation**: Comprehensive validation on all inputs
+- **SQL Injection Prevention**: Uses Laravel's Eloquent ORM
+- **Session Security**: Secure session management
+- **File Upload Security**: Validates JSON files and restricts file types
+- **Access Control**: Middleware-based authentication
+
+## File Structure
+
+```
+quiz-system-laravel/
+├── app/
+│   ├── Http/Controllers/
+│   │   ├── AuthController.php
+│   │   ├── DashboardController.php
+│   │   ├── QuizController.php
+│   │   └── QuizManagerController.php
+│   └── Models/
+│       ├── User.php
+│       ├── Quiz.php
+│       └── QuizResult.php
+├── database/migrations/
+│   ├── create_users_table.php
+│   ├── create_quizzes_table.php
+│   └── create_quiz_results_table.php
+├── resources/views/
+│   ├── layouts/
+│   │   └── app.blade.php
+│   ├── auth/
+│   │   ├── login.blade.php
+│   │   └── register.blade.php
+│   ├── quiz/
+│   │   ├── create.blade.php
+│   │   └── show.blade.php
+│   └── dashboard.blade.php
+├── routes/
+│   └── web.php
+└── storage/
+    ├── app/
+    │   ├── uploads/     # Quiz JSON files
+    │   └── qr_codes/    # Generated QR codes
+    └── public/          # Public storage
+```
+
+## Usage
+
+### For Professors
+
+1. **Register/Login**: Create an account or log in
+2. **Create Quiz**: 
+   - Upload a JSON file with quiz questions
+   - Or use one of the provided templates
+3. **Share Quiz**: Copy the generated URL or QR code
+4. **Monitor Results**: View statistics and student performance
+
+### For Students
+
+1. **Access Quiz**: Use the provided URL or scan QR code
+2. **Enter Student Number**: Provide your student identifier
+3. **Take Quiz**: Answer questions within the time limit
+4. **Submit**: Quiz automatically submits when completed
+
+## Customization
+
+### Adding New Quiz Templates
+
+Edit `resources/views/quiz/create.blade.php` and add new templates to the JavaScript templates object.
+
+### Modifying Quiz Timer
+
+Change the `timeLeft` variable in `resources/views/quiz/show.blade.php`.
+
+### Styling
+
+All styles are included inline in the Blade templates. Modify the CSS within the `<style>` tags to customize the appearance.
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Database Connection Error**
-   - Check database credentials in `config.php`
-   - Ensure MySQL service is running
-   - Verify database exists
+1. **QR Codes Not Generating**
+   - Check internet connection (uses external APIs)
+   - Verify storage permissions
+   - Check Laravel storage configuration
 
 2. **File Upload Issues**
-   - Check directory permissions (755 for uploads/, qr_codes/, logs/)
-   - Verify PHP file upload settings
-   - Check available disk space
+   - Verify `storage/app/uploads` directory exists
+   - Check file permissions
+   - Ensure JSON file format is correct
 
-3. **QR Code Generation Fails**
-   - Ensure internet connection (uses Google Charts API)
-   - Check qr_codes/ directory permissions
-   - Verify URL generation is working
+3. **Database Connection**
+   - Verify database credentials in `.env`
+   - Ensure MySQL service is running
+   - Check database exists
 
-4. **Quiz Not Loading**
-   - Check JSON file format
-   - Verify file exists in uploads/ directory
-   - Check database for quiz record
+### Logs
 
-### Error Logs
-- Check PHP error logs for detailed error messages
-- System logs stored in `logs/` directory
-- Database errors logged to PHP error log
+Check Laravel logs in `storage/logs/laravel.log` for detailed error information.
 
-## Future Enhancements
+## Contributing
 
-### Planned Features
-- **SimpleSAML Integration** - Enterprise authentication
-- **Bulk Quiz Import** - Multiple quiz creation
-- **Advanced Analytics** - Detailed performance reports
-- **Quiz Templates** - Pre-built question sets
-- **Export Options** - CSV/Excel result downloads
-- **Mobile App** - Native mobile quiz taking
-
-### Technical Improvements
-- **Caching System** - Improved performance
-- **API Rate Limiting** - Security enhancement
-- **Real-time Updates** - Live quiz monitoring
-- **Offline Support** - Local quiz storage
-
-## Support
-
-For technical support or feature requests, please contact the development team.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 
-This project is proprietary software. All rights reserved. 
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Support
+
+For support and questions, please create an issue in the repository or contact the development team.

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favicon Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .svg-preview {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .instructions {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .code {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Favicon Converter</h1>
+    
+    <div class="svg-preview">
+        <h3>SVG Favicon Preview:</h3>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">
+            <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="4" fill="url(#grad)"/>
+            <path d="M16 4L4 10L16 16L28 10L16 4Z" fill="white" opacity="0.9"/>
+            <path d="M4 10V20C4 22.2091 5.79086 24 8 24H24C26.2091 24 28 22.2091 28 20V10L16 16L4 10Z" fill="white" opacity="0.7"/>
+            <path d="M12 24V28H20V24" stroke="white" stroke-width="1.5" fill="none"/>
+            <circle cx="16" cy="12" r="2" fill="white" opacity="0.8"/>
+        </svg>
+    </div>
+
+    <div class="instructions">
+        <h3>How to Convert SVG to ICO:</h3>
+        <ol>
+            <li><strong>Online Converter:</strong> Use an online SVG to ICO converter like:
+                <ul>
+                    <li><a href="https://convertio.co/svg-ico/" target="_blank">Convertio</a></li>
+                    <li><a href="https://www.favicon-generator.org/" target="_blank">Favicon Generator</a></li>
+                    <li><a href="https://favicon.io/favicon-converter/" target="_blank">Favicon.io</a></li>
+                </ul>
+            </li>
+            <li><strong>Manual Method:</strong>
+                <ul>
+                    <li>Open the SVG file in a browser</li>
+                    <li>Take a screenshot or use browser dev tools to save as PNG</li>
+                    <li>Use an image editor to resize to 16x16, 32x32, and 48x48 pixels</li>
+                    <li>Convert to ICO format using an online converter</li>
+                </ul>
+            </li>
+            <li><strong>Command Line (if you have ImageMagick):</strong>
+                <div class="code">
+                    convert favicon.svg -resize 16x16 favicon-16x16.png<br>
+                    convert favicon.svg -resize 32x32 favicon-32x32.png<br>
+                    convert favicon.svg -resize 48x48 favicon-48x48.png<br>
+                    convert favicon-16x16.png favicon-32x32.png favicon-48x48.png favicon.ico
+                </div>
+            </li>
+        </ol>
+    </div>
+
+    <div class="instructions">
+        <h3>SVG Code:</h3>
+        <div class="code">
+&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"&gt;
+  &lt;defs&gt;
+    &lt;linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"&gt;
+      &lt;stop offset="0%" style="stop-color:#667eea;stop-opacity:1" /&gt;
+      &lt;stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /&gt;
+    &lt;/linearGradient&gt;
+  &lt;/defs&gt;
+  &lt;rect width="32" height="32" rx="4" fill="url(#grad)"/&gt;
+  &lt;path d="M16 4L4 10L16 16L28 10L16 4Z" fill="white" opacity="0.9"/&gt;
+  &lt;path d="M4 10V20C4 22.2091 5.79086 24 8 24H24C26.2091 24 28 22.2091 28 20V10L16 16L4 10Z" fill="white" opacity="0.7"/&gt;
+  &lt;path d="M12 24V28H20V24" stroke="white" stroke-width="1.5" fill="none"/&gt;
+  &lt;circle cx="16" cy="12" r="2" fill="white" opacity="0.8"/&gt;
+&lt;/svg&gt;
+        </div>
+    </div>
+
+    <p><strong>Note:</strong> The SVG favicon is already working in modern browsers. The ICO format is mainly needed for older browsers and when you need to support multiple sizes in a single file.</p>
+</body>
+</html> 
