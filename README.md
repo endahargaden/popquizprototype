@@ -39,7 +39,7 @@ A comprehensive quiz management system built with Laravel, featuring professor r
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd quiz-system-laravel
+   cd popquizprototype
    ```
 
 2. **Install dependencies**
