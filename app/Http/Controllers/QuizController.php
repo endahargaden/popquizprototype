@@ -13,12 +13,12 @@ class QuizController extends Controller
     {
         $quiz = Quiz::where('quiz_id', $quizId)->firstOrFail();
         
-        $jsonPath = storage_path('app/uploads/' . $quiz->json_file);
-        if (!file_exists($jsonPath)) {
+        $filePath = 'uploads/' . $quiz->json_file;
+        if (!Storage::exists($filePath)) {
             abort(404, 'Quiz file not found');
         }
 
-        $questions = json_decode(file_get_contents($jsonPath), true);
+        $questions = json_decode(Storage::get($filePath), true);
         if (!$questions) {
             abort(500, 'Invalid quiz data');
         }
@@ -76,8 +76,8 @@ class QuizController extends Controller
         }
 
         $quiz = Quiz::where('quiz_id', $quizId)->firstOrFail();
-        $jsonPath = storage_path('app/uploads/' . $quiz->json_file);
-        $questions = json_decode(file_get_contents($jsonPath), true);
+        $filePath = 'uploads/' . $quiz->json_file;
+        $questions = json_decode(Storage::get($filePath), true);
 
         $questionIndex = $request->get('question_index', 0);
 
@@ -112,8 +112,8 @@ class QuizController extends Controller
         ]);
 
         $quiz = Quiz::where('quiz_id', $quizId)->firstOrFail();
-        $jsonPath = storage_path('app/uploads/' . $quiz->json_file);
-        $questions = json_decode(file_get_contents($jsonPath), true);
+        $filePath = 'uploads/' . $quiz->json_file;
+        $questions = json_decode(Storage::get($filePath), true);
 
         $isCorrect = false;
         $correctAnswerText = null;
@@ -143,8 +143,8 @@ class QuizController extends Controller
         ]);
 
         $quiz = Quiz::where('quiz_id', $quizId)->firstOrFail();
-        $jsonPath = storage_path('app/uploads/' . $quiz->json_file);
-        $questions = json_decode(file_get_contents($jsonPath), true);
+        $filePath = 'uploads/' . $quiz->json_file;
+        $questions = json_decode(Storage::get($filePath), true);
 
         session(['quiz_state' => 'terminated']);
         session(['quiz_terminated_reason' => $request->reason]);

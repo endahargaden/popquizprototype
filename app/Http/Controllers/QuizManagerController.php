@@ -7,6 +7,7 @@ use App\Models\QuizResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class QuizManagerController extends Controller
@@ -38,7 +39,7 @@ class QuizManagerController extends Controller
 
         $quizId = $this->generateUniqueQuizId();
         $filename = $this->generateUniqueFilename();
-        $filePath = storage_path('app/uploads/' . $filename);
+        $filePath = 'uploads/' . $filename;
 
         // Ensure uploads directory exists
         if (!Storage::exists('uploads')) {
@@ -47,31 +48,62 @@ class QuizManagerController extends Controller
 
         $jsonContent = json_encode($quizData, JSON_PRETTY_PRINT);
 
-        if (!Storage::put('uploads/' . $filename, $jsonContent)) {
+        try {
+            if (!Storage::put($filePath, $jsonContent)) {
+                Log::error('Failed to save quiz file: ' . $filePath);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to save quiz file'
+                ]);
+            }
+
+            // Verify file was created
+            if (!Storage::exists($filePath)) {
+                Log::error('Quiz file was not created: ' . $filePath);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Quiz file was not created'
+                ]);
+            }
+
+            $title = $this->extractQuizTitle($quizData);
+
+            $quiz = Quiz::create([
+                'quiz_id' => $quizId,
+                'user_id' => Auth::id(),
+                'title' => $title,
+                'json_file' => $filename,
+            ]);
+
+            $qrCodePath = $this->generateQRCode($quizId);
+
+            Log::info('Quiz created successfully', [
+                'quiz_id' => $quizId,
+                'filename' => $filename,
+                'qr_code' => $qrCodePath
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quiz created successfully' . ($qrCodePath ? '' : ' (QR code generation failed)'),
+                'quiz_id' => $quizId,
+                'url' => route('quiz.show', $quizId),
+                'qr_code' => $qrCodePath,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating quiz: ' . $e->getMessage());
+            
+            // Clean up any partially created files
+            if (Storage::exists($filePath)) {
+                Storage::delete($filePath);
+            }
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to save quiz file'
+                'message' => 'An error occurred while creating the quiz: ' . $e->getMessage()
             ]);
         }
-
-        $title = $this->extractQuizTitle($quizData);
-
-        $quiz = Quiz::create([
-            'quiz_id' => $quizId,
-            'user_id' => Auth::id(),
-            'title' => $title,
-            'json_file' => $filename,
-        ]);
-
-        $qrCodePath = $this->generateQRCode($quizId);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Quiz created successfully' . ($qrCodePath ? '' : ' (QR code generation failed)'),
-            'quiz_id' => $quizId,
-            'url' => route('quiz.show', $quizId),
-            'qr_code' => $qrCodePath,
-        ]);
     }
 
     public function getStats(Request $request)
@@ -229,13 +261,25 @@ class QuizManagerController extends Controller
             $qrImage = @file_get_contents($qrUrl2, false, $context);
         }
 
+        // Method 3: QR Code Monkey API (another fallback)
+        if ($qrImage === false || strlen($qrImage) < 100) {
+            $qrUrl3 = "https://www.qrcode-monkey.com/api/qr/custom?size=300&data=" . urlencode($quizUrl);
+            $qrImage = @file_get_contents($qrUrl3, false, $context);
+        }
+
         // If external APIs work, save the image using Laravel Storage
         if ($qrImage !== false && strlen($qrImage) > 100) {
-            if (Storage::put($qrCodePath, $qrImage)) {
-                return $qrCodePath;
+            try {
+                if (Storage::put($qrCodePath, $qrImage)) {
+                    return $qrCodePath;
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to save QR code: ' . $e->getMessage());
             }
         }
 
+        // If all external APIs fail, create a simple text-based QR code placeholder
+        Log::warning('External QR code generation failed for quiz: ' . $quizId);
         return null;
     }
 
@@ -250,8 +294,28 @@ class QuizManagerController extends Controller
             ];
         }
 
-        $jsonPath = storage_path('app/uploads/' . $jsonFile);
-        $quizData = json_decode(file_get_contents($jsonPath), true);
+        $filePath = 'uploads/' . $jsonFile;
+        if (!Storage::exists($filePath)) {
+            Log::error('Quiz file not found for stats: ' . $filePath);
+            return [
+                'total_attempts' => 0,
+                'average_score' => 0,
+                'easiest_question' => null,
+                'hardest_question' => null
+            ];
+        }
+
+        $quizData = json_decode(Storage::get($filePath), true);
+        if (!$quizData) {
+            Log::error('Invalid quiz data for stats: ' . $filePath);
+            return [
+                'total_attempts' => 0,
+                'average_score' => 0,
+                'easiest_question' => null,
+                'hardest_question' => null
+            ];
+        }
+
         $numQuestions = count($quizData);
 
         $questionStats = array_fill(0, $numQuestions, ['correct' => 0, 'total' => 0]);
